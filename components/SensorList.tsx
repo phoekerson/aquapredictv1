@@ -13,6 +13,7 @@ interface Sensor {
 }
 
 export function SensorList() {
+  const [mounted, setMounted] = useState(false);
   const [sensors, setSensors] = useState<Sensor[]>([
     { id: 1, name: 'SENS-DKR-001', location: 'Dakar Centre', value: 78.3, trend: 'down', status: 'online', lastUpdate: 'Il y a 2s' },
     { id: 2, name: 'SENS-LGS-042', location: 'Lagos Plateau', value: 92.1, trend: 'up', status: 'online', lastUpdate: 'Il y a 5s' },
@@ -20,19 +21,46 @@ export function SensorList() {
     { id: 4, name: 'SENS-NBO-029', location: 'Nairobi CBD', value: 84.2, trend: 'down', status: 'online', lastUpdate: 'Il y a 1s' },
     { id: 5, name: 'SENS-CAI-055', location: 'Le Caire Nord', value: 71.5, trend: 'up', status: 'online', lastUpdate: 'Il y a 4s' },
   ]);
+  const [chartHeights, setChartHeights] = useState<Record<number, number[]>>({});
 
   useEffect(() => {
+    setMounted(true);
+    // Initialize chart heights only on client
+    const initialHeights: Record<number, number[]> = {};
+    sensors.forEach(sensor => {
+      initialHeights[sensor.id] = Array.from({ length: 8 }, () => 20 + Math.random() * 80);
+    });
+    setChartHeights(initialHeights);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
-      setSensors(prev => prev.map(sensor => ({
-        ...sensor,
-        value: Math.max(50, Math.min(100, sensor.value + (Math.random() - 0.5) * 5)),
-        trend: Math.random() > 0.6 ? 'up' : (Math.random() > 0.3 ? 'down' : 'stable'),
-        lastUpdate: `Il y a ${Math.floor(Math.random() * 10)}s`,
-      })));
+      setSensors(prev => {
+        const updated = prev.map(sensor => ({
+          ...sensor,
+          value: Math.max(50, Math.min(100, sensor.value + (Math.random() - 0.5) * 5)),
+          trend: Math.random() > 0.6 ? 'up' : (Math.random() > 0.3 ? 'down' : 'stable'),
+          lastUpdate: `Il y a ${Math.floor(Math.random() * 10)}s`,
+        }));
+        
+        // Update chart heights based on updated sensors
+        setChartHeights(prevHeights => {
+          const newHeights: Record<number, number[]> = {};
+          updated.forEach(sensor => {
+            newHeights[sensor.id] = Array.from({ length: 8 }, () => 20 + Math.random() * 80);
+          });
+          return { ...prevHeights, ...newHeights };
+        });
+        
+        return updated;
+      });
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   return (
     <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 rounded-lg border border-cyan-500/30 p-6 backdrop-blur-xl">
@@ -82,16 +110,23 @@ export function SensorList() {
 
               {/* Mini chart */}
               <div className="flex items-end gap-0.5 h-8">
-                {[...Array(8)].map((_, i) => {
-                  const height = 20 + Math.random() * 80;
-                  return (
+                {mounted && chartHeights[sensor.id] ? (
+                  chartHeights[sensor.id].map((height, i) => (
                     <div
                       key={i}
                       className="w-1 bg-cyan-500/50 rounded-t"
                       style={{ height: `${height}%` }}
                     />
-                  );
-                })}
+                  ))
+                ) : (
+                  [...Array(8)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-gray-700/50 rounded-t"
+                      style={{ height: '50%' }}
+                    />
+                  ))
+                )}
               </div>
             </div>
           </motion.div>
