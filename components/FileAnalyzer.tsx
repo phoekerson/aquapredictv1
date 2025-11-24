@@ -434,7 +434,7 @@ export function FileAnalyzer() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ label, value }) => `${label}: ${value}`}
+                        label={(entry: any) => `${entry.label}: ${entry.value}`}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
@@ -502,4 +502,3 @@ export function FileAnalyzer() {
     </div>
   );
 }
-
