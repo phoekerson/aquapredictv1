@@ -173,95 +173,108 @@ export function FileAnalyzer() {
   const handleDownloadDocx = async () => {
     if (!analysis) return;
 
+    // Build all paragraphs in an array
+    const allParagraphs: Paragraph[] = [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Rapport IA AquaPredict',
+            bold: true,
+            size: 32,
+            color: '00FFFF',
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Fichier analysé : ${analysisMeta?.fileName || 'N/A'} (${analysisMeta?.fileType || 'inconnu'})`,
+            size: 22,
+          }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Date : ${new Date().toLocaleString('fr-FR')}`,
+            size: 22,
+          }),
+        ],
+      }),
+      new Paragraph({ text: '' }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Résumé exécutif', bold: true, size: 26, color: '00FFFF' }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({ text: analysis.summary, size: 22 }),
+        ],
+      }),
+      new Paragraph({ text: '' }),
+    ];
+
+    // Helper function to add a list section
+    const addListParagraphs = (items: string[], title: string) => {
+      if (!items || items.length === 0) return;
+      
+      allParagraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: title, bold: true, size: 26, color: '00FFFF' })],
+        })
+      );
+      
+      items.forEach((item) => {
+        allParagraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: `• ${item}`, size: 22 }),
+            ],
+          })
+        );
+      });
+      
+      allParagraphs.push(new Paragraph({ text: '' }));
+    };
+
+    // Add all sections
+    addListParagraphs(analysis.keyPoints, 'Points clés');
+    addListParagraphs(analysis.recommendations, 'Recommandations');
+    addListParagraphs(analysis.risks, 'Risques identifiés');
+    addListParagraphs(analysis.trends, 'Tendances observées');
+
+    // Add quantitative data if available
+    if (analysis.quantitativeData && analysis.quantitativeData.length > 0) {
+      allParagraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Données quantitatives', bold: true, size: 26, color: '00FFFF' })],
+        })
+      );
+      
+      analysis.quantitativeData.slice(0, 8).forEach((dataPoint) => {
+        allParagraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${dataPoint.label} : ${dataPoint.value}${dataPoint.unit ? ` ${dataPoint.unit}` : ''}`,
+                size: 22,
+              }),
+            ],
+          })
+        );
+      });
+    }
+
+    // Create document with all paragraphs in a single section
     const doc = new Document({
       sections: [
         {
           properties: {},
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Rapport IA AquaPredict',
-                  bold: true,
-                  size: 32,
-                  color: '00FFFF',
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Fichier analysé : ${analysisMeta?.fileName || 'N/A'} (${analysisMeta?.fileType || 'inconnu'})`,
-                  size: 22,
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `Date : ${new Date().toLocaleString('fr-FR')}`,
-                  size: 22,
-                }),
-              ],
-            }),
-            new Paragraph({ text: '' }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Résumé exécutif', bold: true, size: 26, color: '00FFFF' }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: analysis.summary, size: 22 }),
-              ],
-            }),
-          ],
+          children: allParagraphs,
         },
       ],
     });
-
-    const addList = (items: string[], title: string) => {
-      if (!items || items.length === 0) return;
-      doc.addSection({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: title, bold: true, size: 26, color: '00FFFF' })],
-          }),
-          ...items.map((item) =>
-            new Paragraph({
-              children: [
-                new TextRun({ text: `• ${item}`, size: 22 }),
-              ],
-            })
-          ),
-        ],
-      });
-    };
-
-    addList(analysis.keyPoints, 'Points clés');
-    addList(analysis.recommendations, 'Recommandations');
-    addList(analysis.risks, 'Risques identifiés');
-    addList(analysis.trends, 'Tendances observées');
-
-    if (analysis.quantitativeData && analysis.quantitativeData.length > 0) {
-      doc.addSection({
-        children: [
-          new Paragraph({
-            children: [new TextRun({ text: 'Données quantitatives', bold: true, size: 26, color: '00FFFF' })],
-          }),
-          ...analysis.quantitativeData.slice(0, 8).map((dataPoint) =>
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `${dataPoint.label} : ${dataPoint.value}${dataPoint.unit ? ` ${dataPoint.unit}` : ''}`,
-                  size: 22,
-                }),
-              ],
-            })
-          ),
-        ],
-      });
-    }
 
     const blob = await Packer.toBlob(doc);
     const fileName = `rapport-${analysisMeta?.fileName || 'aquapredict'}.docx`;
