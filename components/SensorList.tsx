@@ -39,12 +39,25 @@ export function SensorList() {
     
     const interval = setInterval(() => {
       setSensors(prev => {
-        const updated = prev.map(sensor => ({
-          ...sensor,
-          value: Math.max(50, Math.min(100, sensor.value + (Math.random() - 0.5) * 5)),
-          trend: Math.random() > 0.6 ? 'up' : (Math.random() > 0.3 ? 'down' : 'stable'),
-          lastUpdate: `Il y a ${Math.floor(Math.random() * 10)}s`,
-        }));
+        const updated = prev.map(sensor => {
+          const random = Math.random();
+          let newTrend: 'up' | 'down' | 'stable';
+          
+          if (random > 0.6) {
+            newTrend = 'up';
+          } else if (random > 0.3) {
+            newTrend = 'down';
+          } else {
+            newTrend = 'stable';
+          }
+
+          return {
+            ...sensor,
+            value: Math.max(50, Math.min(100, sensor.value + (Math.random() - 0.5) * 5)),
+            trend: newTrend,
+            lastUpdate: `Il y a ${Math.floor(Math.random() * 10)}s`,
+          };
+        });
         
         // Update chart heights based on updated sensors
         setChartHeights(prevHeights => {
